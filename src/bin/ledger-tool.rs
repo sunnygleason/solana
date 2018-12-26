@@ -6,7 +6,7 @@ extern crate solana;
 use clap::{App, Arg, SubCommand};
 use solana::bank::Bank;
 use solana::leader_scheduler::LeaderScheduler;
-use solana::ledger::{read_ledger, verify_ledger};
+use solana::ledger::{read_ledger, tail_ledger, verify_ledger};
 use solana::logger;
 use std::io::{stdout, Write};
 use std::process::exit;
@@ -58,7 +58,7 @@ fn main() {
         }
     }
 
-    let entries = match read_ledger(ledger_path, true) {
+    let entries = match tail_ledger(ledger_path, true) {
         Ok(entries) => entries,
         Err(err) => {
             eprintln!("Failed to open ledger at {}: {}", ledger_path, err);
