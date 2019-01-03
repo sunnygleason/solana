@@ -17,3 +17,5 @@ Cargo.lock
 
 # log files
 *.log
+
+node_modules
