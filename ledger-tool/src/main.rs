@@ -463,18 +463,18 @@ fn analyze_column<T: solana_ledger::blocktree_db::Column>(
     Ok(())
 }
 
-fn analyze_storage(blocktree: &Database) -> Result<(), String> {
+fn analyze_storage(database: &Database) -> Result<(), String> {
     use blocktree_db::columns::*;
-    analyze_column::<SlotMeta>(blocktree, "SlotMeta", SlotMeta::key_size())?;
-    analyze_column::<Orphans>(blocktree, "Orphans", Orphans::key_size())?;
-    analyze_column::<DeadSlots>(blocktree, "DeadSlots", DeadSlots::key_size())?;
-    analyze_column::<ErasureMeta>(blocktree, "ErasureMeta", ErasureMeta::key_size())?;
-    analyze_column::<Root>(blocktree, "Root", Root::key_size())?;
-    analyze_column::<Index>(blocktree, "Index", Index::key_size())?;
-    analyze_column::<ShredData>(blocktree, "ShredData", ShredData::key_size())?;
-    analyze_column::<ShredCode>(blocktree, "ShredCode", ShredCode::key_size())?;
+    analyze_column::<SlotMeta>(database, "SlotMeta", SlotMeta::key_size())?;
+    analyze_column::<Orphans>(database, "Orphans", Orphans::key_size())?;
+    analyze_column::<DeadSlots>(database, "DeadSlots", DeadSlots::key_size())?;
+    analyze_column::<ErasureMeta>(database, "ErasureMeta", ErasureMeta::key_size())?;
+    analyze_column::<Root>(database, "Root", Root::key_size())?;
+    analyze_column::<Index>(database, "Index", Index::key_size())?;
+    analyze_column::<ShredData>(database, "ShredData", ShredData::key_size())?;
+    analyze_column::<ShredCode>(database, "ShredCode", ShredCode::key_size())?;
     analyze_column::<TransactionStatus>(
-        blocktree,
+        database,
         "TransactionStatus",
         TransactionStatus::key_size(),
     )?;
@@ -508,79 +508,79 @@ fn main() {
         )
         .subcommand(
             SubCommand::with_name("print")
-            .about("Print the ledger")
-            .arg(&starting_slot_arg)
+                .about("Print the ledger")
+                .arg(&starting_slot_arg)
         )
         .subcommand(
             SubCommand::with_name("print-slot")
-            .about("Print the contents of one or more slots")
-            .arg(
-                Arg::with_name("slots")
-                    .index(1)
-                    .value_name("SLOTS")
-                    .takes_value(true)
-                    .multiple(true)
-                    .required(true)
-                    .help("List of slots to print"),
-            )
+                .about("Print the contents of one or more slots")
+                .arg(
+                    Arg::with_name("slots")
+                        .index(1)
+                        .value_name("SLOTS")
+                        .takes_value(true)
+                        .multiple(true)
+                        .required(true)
+                        .help("List of slots to print"),
+                )
         )
         .subcommand(
             SubCommand::with_name("print-genesis-hash")
-            .about("Prints the ledger's genesis hash")
+                .about("Prints the ledger's genesis hash")
         )
         .subcommand(
             SubCommand::with_name("bounds")
-            .about("Print lowest and highest non-empty slots. Note: This ignores gaps in slots")
+                .about("Print lowest and highest non-empty slots. Note: This ignores gaps in slots")
         )
         .subcommand(
             SubCommand::with_name("json")
-            .about("Print the ledger in JSON format")
-            .arg(&starting_slot_arg)
+                .about("Print the ledger in JSON format")
+                .arg(&starting_slot_arg)
         )
         .subcommand(
             SubCommand::with_name("verify")
-            .about("Verify the ledger")
-            .arg(
-                Arg::with_name("no_snapshot")
-                    .long("no-snapshot")
-                    .takes_value(false)
-                    .help("Do not start from a local snapshot if present"),
-            )
-            .arg(
-                Arg::with_name("account_paths")
-                    .long("accounts")
-                    .value_name("PATHS")
-                    .takes_value(true)
-                    .help("Comma separated persistent accounts location"),
-            )
-            .arg(
-                Arg::with_name("halt_at_slot")
-                    .long("halt-at-slot")
-                    .value_name("SLOT")
-                    .takes_value(true)
-                    .help("Halt processing at the given slot"),
-            )
-            .arg(
-                Arg::with_name("skip_poh_verify")
-                    .long("skip-poh-verify")
-                    .takes_value(false)
-                    .help("Skip ledger PoH verification"),
-            )
-            .arg(
-                Arg::with_name("graph_forks")
-                    .long("graph-forks")
-                    .value_name("FILENAME")
-                    .takes_value(true)
-                    .help("Create a Graphviz DOT file representing the active forks once the ledger is verified"),
-            )
-            .arg(
-                Arg::with_name("graph_forks_include_all_votes")
-                    .long("graph-forks-include-all-votes")
-                    .requires("graph_forks")
-                    .help("Include all votes in forks graph"),
-            )
+                .about("Verify the ledger")
+                .arg(
+                    Arg::with_name("no_snapshot")
+                        .long("no-snapshot")
+                        .takes_value(false)
+                        .help("Do not start from a local snapshot if present"),
+                )
+                .arg(
+                    Arg::with_name("account_paths")
+                        .long("accounts")
+                        .value_name("PATHS")
+                        .takes_value(true)
+                        .help("Comma separated persistent accounts location"),
+                )
+                .arg(
+                    Arg::with_name("halt_at_slot")
+                        .long("halt-at-slot")
+                        .value_name("SLOT")
+                        .takes_value(true)
+                        .help("Halt processing at the given slot"),
+                )
+                .arg(
+                    Arg::with_name("skip_poh_verify")
+                        .long("skip-poh-verify")
+                        .takes_value(false)
+                        .help("Skip ledger PoH verification"),
+                )
+                .arg(
+                    Arg::with_name("graph_forks")
+                        .long("graph-forks")
+                        .value_name("FILENAME")
+                        .takes_value(true)
+                        .help("Create a Graphviz DOT file representing the active forks once the ledger is verified"),
+                )
+                .arg(
+                    Arg::with_name("graph_forks_include_all_votes")
+                        .long("graph-forks-include-all-votes")
+                        .requires("graph_forks")
+                        .help("Include all votes in forks graph"),
+                )
         ).subcommand(
-            SubCommand::with_name("prune")
+        SubCommand::with_name("prune")
             .about("Prune the ledger at the block height")
             .arg(
                 Arg::with_name("slot_list")
@@ -590,35 +590,35 @@ fn main() {
                     .required(true)
                     .help("The location of the YAML file with a list of rollback slot heights and hashes"),
             )
-        )
+    )
         .subcommand(
             SubCommand::with_name("list-roots")
-            .about("Output upto last <num-roots> root hashes and their heights starting at the given block height")
-            .arg(
-                Arg::with_name("max_height")
-                    .long("max-height")
-                    .value_name("NUM")
-                    .takes_value(true)
-                    .required(true)
-                    .help("Maximum block height")
-            )
-            .arg(
-                Arg::with_name("slot_list")
-                    .long("slot-list")
-                    .value_name("FILENAME")
-                    .required(false)
-                    .takes_value(true)
-                    .help("The location of the output YAML file. A list of rollback slot heights and hashes will be written to the file.")
-            )
-            .arg(
-                Arg::with_name("num_roots")
-                    .long("num-roots")
-                    .value_name("NUM")
-                    .takes_value(true)
-                    .default_value(DEFAULT_ROOT_COUNT)
-                    .required(false)
-                    .help("Number of roots in the output"),
-            )
+                .about("Output upto last <num-roots> root hashes and their heights starting at the given block height")
+                .arg(
+                    Arg::with_name("max_height")
+                        .long("max-height")
+                        .value_name("NUM")
+                        .takes_value(true)
+                        .required(true)
+                        .help("Maximum block height")
+                )
+                .arg(
+                    Arg::with_name("slot_list")
+                        .long("slot-list")
+                        .value_name("FILENAME")
+                        .required(false)
+                        .takes_value(true)
+                        .help("The location of the output YAML file. A list of rollback slot heights and hashes will be written to the file.")
+                )
+                .arg(
+                    Arg::with_name("num_roots")
+                        .long("num-roots")
+                        .value_name("NUM")
+                        .takes_value(true)
+                        .default_value(DEFAULT_ROOT_COUNT)
+                        .required(false)
+                        .help("Number of roots in the output"),
+                )
         )
         .subcommand(
             SubCommand::with_name("analyze-storage")
@@ -627,6 +627,27 @@ fn main() {
         .get_matches();
 
     let ledger_path = PathBuf::from(value_t_or_exit!(matches, "ledger", String));
+
+    match matches.subcommand() {
+        ("analyze-storage", _) => {
+            let database = Database::open(&ledger_path.join("rocksdb"));
+            if let Err(err) = database {
+                eprintln!("Unable to read the Ledger: {:?}", err);
+                exit(1);
+            };
+            match analyze_storage(&database.unwrap()) {
+                Ok(()) => {
+                    println!("Ok.");
+                    exit(0);
+                }
+                Err(err) => {
+                    eprintln!("Unable to read the Ledger: {:?}", err);
+                    exit(1);
+                }
+            }
+        }
+        _ => (),
+    }
 
     let genesis_config = GenesisConfig::load(&ledger_path).unwrap_or_else(|err| {
         eprintln!(
@@ -835,15 +856,6 @@ fn main() {
                         println!("Ledger only contains some data for slot {:?}", first);
                     }
                 }
-            }
-            Err(err) => {
-                eprintln!("Unable to read the Ledger: {:?}", err);
-                exit(1);
-            }
-        },
-        ("analyze-storage", _) => match analyze_storage(&blocktree.db()) {
-            Ok(()) => {
-                println!("Ok.");
             }
             Err(err) => {
                 eprintln!("Unable to read the Ledger: {:?}", err);
