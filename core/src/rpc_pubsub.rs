@@ -277,6 +277,7 @@ impl RpcSolPubSub for RpcSolPubSubImpl {
 mod tests {
     use super::*;
     use crate::genesis_utils::{create_genesis_config, GenesisConfigInfo};
+    use crate::rpc_subscriptions::tests::robust_poll;
     use jsonrpc_core::futures::sync::mpsc;
     use jsonrpc_core::Response;
     use jsonrpc_pubsub::{PubSubHandler, Session};
@@ -292,7 +293,7 @@ mod tests {
     use std::sync::RwLock;
     use std::thread::sleep;
     use std::time::Duration;
-    use tokio::prelude::{Async, Stream};
+    use tokio::prelude::Stream;
 
     fn process_transaction_and_notify(
         bank_forks: &Arc<RwLock<BankForks>>,
@@ -332,16 +333,14 @@ mod tests {
         let tx = system_transaction::transfer(&alice, &bob_pubkey, 20, blockhash);
 
         let session = create_session();
-        let (subscriber, _id_receiver, mut receiver) =
-            Subscriber::new_test("signatureNotification");
+        let (subscriber, _id_receiver, receiver) = Subscriber::new_test("signatureNotification");
         rpc.signature_subscribe(session, subscriber, tx.signatures[0].to_string(), None);
 
         process_transaction_and_notify(&bank_forks, &tx, &rpc.subscriptions).unwrap();
-        sleep(Duration::from_millis(200));
 
         // Test signature confirmation notification
-        let string = receiver.poll();
-        if let Async::Ready(Some(response)) = string.unwrap() {
+        let string = robust_poll(receiver);
+        if let Ok(response) = string {
             let expected_res: Option<transaction::Result<()>> = Some(Ok(()));
             let expected_res_str =
                 serde_json::to_string(&serde_json::to_value(expected_res).unwrap()).unwrap();
@@ -350,6 +349,8 @@ mod tests {
                 expected_res_str
             );
             assert_eq!(expected, response);
+        } else {
+            panic!("expected response!");
         }
     }
 
@@ -425,7 +426,7 @@ mod tests {
 
         let rpc = RpcSolPubSubImpl::default();
         let session = create_session();
-        let (subscriber, _id_receiver, mut receiver) = Subscriber::new_test("accountNotification");
+        let (subscriber, _id_receiver, receiver) = Subscriber::new_test("accountNotification");
         rpc.account_subscribe(
             session,
             subscriber,
@@ -453,7 +454,7 @@ mod tests {
         sleep(Duration::from_millis(200));
 
         // Test signature confirmation notification #1
-        let string = receiver.poll();
+        let string = robust_poll(receiver);
         let expected_data = bank_forks
             .read()
             .unwrap()
@@ -477,8 +478,10 @@ mod tests {
            }
         });
 
-        if let Async::Ready(Some(response)) = string.unwrap() {
+        if let Ok(response) = string {
             assert_eq!(serde_json::to_string(&expected).unwrap(), response);
+        } else {
+            panic!("expected response!");
         }
 
         let tx = system_transaction::transfer(&alice, &witness.pubkey(), 1, blockhash);
@@ -570,6 +573,8 @@ mod tests {
             .process_transaction(&tx)
             .unwrap();
         rpc.subscriptions.notify_subscribers(0, &bank_forks);
+        // allow 200ms for notification thread to wake
+        std::thread::sleep(Duration::from_millis(200));
         let _panic = receiver.poll();
     }
 
@@ -587,7 +592,7 @@ mod tests {
 
         let rpc = RpcSolPubSubImpl::default();
         let session = create_session();
-        let (subscriber, _id_receiver, mut receiver) = Subscriber::new_test("accountNotification");
+        let (subscriber, _id_receiver, receiver) = Subscriber::new_test("accountNotification");
         rpc.account_subscribe(session, subscriber, bob.pubkey().to_string(), Some(2));
 
         let tx = system_transaction::transfer(&alice, &bob.pubkey(), 100, blockhash);
@@ -608,7 +613,7 @@ mod tests {
         let bank2 = Bank::new_from_parent(&bank1, &Pubkey::default(), 2);
         bank_forks.write().unwrap().insert(bank2);
         rpc.subscriptions.notify_subscribers(2, &bank_forks);
-        let string = receiver.poll();
+        let string = robust_poll(receiver);
         let expected = json!({
            "jsonrpc": "2.0",
            "method": "accountNotification",
@@ -623,8 +628,10 @@ mod tests {
                "subscription": 0,
            }
         });
-        if let Async::Ready(Some(response)) = string.unwrap() {
+        if let Ok(response) = string {
             assert_eq!(serde_json::to_string(&expected).unwrap(), response);
+        } else {
+            panic!("expected response!");
         }
     }
 
@@ -632,14 +639,13 @@ mod tests {
     fn test_slot_subscribe() {
         let rpc = RpcSolPubSubImpl::default();
         let session = create_session();
-        let (subscriber, _id_receiver, mut receiver) = Subscriber::new_test("slotNotification");
+        let (subscriber, _id_receiver, receiver) = Subscriber::new_test("slotNotification");
         rpc.slot_subscribe(session, subscriber);
 
         rpc.subscriptions.notify_slot(0, 0, 0);
-
         // Test slot confirmation notification
-        let string = receiver.poll();
-        if let Async::Ready(Some(response)) = string.unwrap() {
+        let string = robust_poll(receiver);
+        if let Ok(response) = string {
             let expected_res = SlotInfo {
                 parent: 0,
                 slot: 0,
@@ -652,6 +658,8 @@ mod tests {
                 expected_res_str
             );
             assert_eq!(expected, response);
+        } else {
+            panic!("expected response!");
         }
     }
 
@@ -659,12 +667,11 @@ mod tests {
     fn test_slot_unsubscribe() {
         let rpc = RpcSolPubSubImpl::default();
         let session = create_session();
-        let (subscriber, _id_receiver, mut receiver) = Subscriber::new_test("slotNotification");
+        let (subscriber, _id_receiver, receiver) = Subscriber::new_test("slotNotification");
         rpc.slot_subscribe(session, subscriber);
         rpc.subscriptions.notify_slot(0, 0, 0);
-
-        let string = receiver.poll();
-        if let Async::Ready(Some(response)) = string.unwrap() {
+        let string = robust_poll(receiver);
+        if let Ok(response) = string {
             let expected_res = SlotInfo {
                 parent: 0,
                 slot: 0,
@@ -677,6 +684,8 @@ mod tests {
                 expected_res_str
             );
             assert_eq!(expected, response);
+        } else {
+            panic!("expected response!");
         }
 
         let session = create_session();
